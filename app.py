@@ -4,10 +4,10 @@ import numpy as np
 import ccxt
 import matplotlib.pyplot as plt
 
-# Fetch BTC/USDT data using ccxt from Binance
-def get_ccxt_binance_data():
-    binance = ccxt.binance()
-    ohlcv = binance.fetch_ohlcv('BTC/USDT', timeframe='1h', limit=100)
+# Fetch BTC/USD data using ccxt from Coinbase
+def get_ccxt_coinbase_data():
+    coinbase = ccxt.coinbase()
+    ohlcv = coinbase.fetch_ohlcv('BTC/USD', timeframe='1h', limit=100)
     df = pd.DataFrame(ohlcv, columns=["timestamp", "open", "high", "low", "close", "volume"])
     df["timestamp"] = pd.to_datetime(df["timestamp"], unit="ms")
     df.set_index("timestamp", inplace=True)
@@ -37,11 +37,11 @@ def calculate_indicators(df):
     return df
 
 # Load and process data
-data = get_ccxt_binance_data()
+data = get_ccxt_coinbase_data()
 
 # Check for empty data
 if data.empty:
-    st.error("❌ No data retrieved from Binance via ccxt. Please try again later.")
+    st.error("❌ No data retrieved from Coinbase via ccxt. Please try again later.")
     st.stop()
 
 # Calculate indicators
@@ -82,4 +82,4 @@ ax.set_title("Price vs SMA")
 ax.legend()
 st.pyplot(fig)
 
-st.caption("Live BTC/USDT data from Binance via ccxt (hourly candles).")
+st.caption("Live BTC/USD data from Coinbase via ccxt (hourly candles).")
