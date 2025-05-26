@@ -50,8 +50,14 @@ def calculate_indicators(df):
 
 # Load and process data
 data = get_binance_data()
-data = calculate_indicators(data)
 
+# Check for empty data
+if data.empty:
+    st.error("❌ No data retrieved from Binance. Please try again later.")
+    st.stop()
+
+# Continue with indicators
+data = calculate_indicators(data)
 latest = data.iloc[-1]
 prev = data.iloc[-2]
 
