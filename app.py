@@ -1,27 +1,15 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import requests
-import datetime
+import ccxt
 import matplotlib.pyplot as plt
 
-# Fetch real BTC price data from Binance (last 100 hours)
-def get_binance_data():
-    url = "https://api.binance.com/api/v3/klines"
-    params = {
-        "symbol": "BTCUSDT",
-        "interval": "1h",
-        "limit": 100
-    }
-    response = requests.get(url, params=params)
-    data = response.json()
-    df = pd.DataFrame(data, columns=[
-        "open_time", "open", "high", "low", "close", "volume",
-        "close_time", "quote_asset_volume", "number_of_trades",
-        "taker_buy_base", "taker_buy_quote", "ignore"
-    ])
-    df["close"] = df["close"].astype(float)
-    df["timestamp"] = pd.to_datetime(df["open_time"], unit='ms')
+# Fetch BTC/USDT data using ccxt from Binance
+def get_ccxt_binance_data():
+    binance = ccxt.binance()
+    ohlcv = binance.fetch_ohlcv('BTC/USDT', timeframe='1h', limit=100)
+    df = pd.DataFrame(ohlcv, columns=["timestamp", "open", "high", "low", "close", "volume"])
+    df["timestamp"] = pd.to_datetime(df["timestamp"], unit="ms")
     df.set_index("timestamp", inplace=True)
     return df[["close"]]
 
@@ -49,14 +37,14 @@ def calculate_indicators(df):
     return df
 
 # Load and process data
-data = get_binance_data()
+data = get_ccxt_binance_data()
 
 # Check for empty data
 if data.empty:
-    st.error("❌ No data retrieved from Binance. Please try again later.")
+    st.error("❌ No data retrieved from Binance via ccxt. Please try again later.")
     st.stop()
 
-# Continue with indicators
+# Calculate indicators
 data = calculate_indicators(data)
 latest = data.iloc[-1]
 prev = data.iloc[-2]
@@ -94,5 +82,4 @@ ax.set_title("Price vs SMA")
 ax.legend()
 st.pyplot(fig)
 
-st.caption("Live data pulled from Binance API (BTC/USDT, hourly candles).")
-
+st.caption("Live BTC/USDT data from Binance via ccxt (hourly candles).")
