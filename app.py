@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 # Fetch BTC/USD data using ccxt from Coinbase
 def get_ccxt_coinbase_data():
     coinbase = ccxt.coinbase()
-    ohlcv = coinbase.fetch_ohlcv('BTC/USD', timeframe='1h', limit=100)
+    ohlcv = coinbase.fetch_ohlcv('BTC/USD', timeframe='30m', limit=100)
     df = pd.DataFrame(ohlcv, columns=["timestamp", "open", "high", "low", "close", "volume"])
     df["timestamp"] = pd.to_datetime(df["timestamp"], unit="ms")
     df.set_index("timestamp", inplace=True)
