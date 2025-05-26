@@ -13,6 +13,22 @@ def get_ccxt_coinbase_data():
     df.set_index("timestamp", inplace=True)
     return df[["close"]]
 
+# Fetch order book depth data
+def get_order_book_summary():
+    coinbase = ccxt.coinbase()
+    order_book = coinbase.fetch_order_book('BTC/USD')
+    bids = order_book['bids']
+    asks = order_book['asks']
+
+    total_bid_volume = sum([bid[1] for bid in bids])
+    total_ask_volume = sum([ask[1] for ask in asks])
+    total_volume = total_bid_volume + total_ask_volume
+
+    buy_pressure = (total_bid_volume / total_volume) * 100 if total_volume > 0 else 0
+    sell_pressure = 100 - buy_pressure
+
+    return total_bid_volume, total_ask_volume, buy_pressure, sell_pressure
+
 # Calculate indicators
 def calculate_indicators(df):
     price_series = df["close"]
@@ -73,6 +89,14 @@ if buy_signal:
 else:
     st.info("No buy signal at the moment.")
 
+# Market depth summary
+st.subheader("Market Depth Snapshot")
+bid_vol, ask_vol, buy_pct, sell_pct = get_order_book_summary()
+st.write(f"**Buy Volume (Bids):** {bid_vol:.2f} BTC")
+st.write(f"**Sell Volume (Asks):** {ask_vol:.2f} BTC")
+st.write(f"**Buy Pressure:** {buy_pct:.2f}%")
+st.write(f"**Sell Pressure:** {sell_pct:.2f}%")
+
 # Chart
 st.subheader("BTC Price & Buy Signal Chart")
 fig, ax = plt.subplots(figsize=(10, 5))
@@ -82,4 +106,4 @@ ax.set_title("Price vs SMA")
 ax.legend()
 st.pyplot(fig)
 
-st.caption("Live BTC/USD data from Coinbase via ccxt (hourly candles).")
+st.caption("Live BTC/USD data from Coinbase via ccxt (30-minute candles) with market depth analysis.")
