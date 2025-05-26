@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import ccxt
 import matplotlib.pyplot as plt
+import feedparser
 
 # Fetch BTC/USD data using ccxt from Coinbase
 def get_ccxt_coinbase_data():
@@ -122,4 +123,11 @@ ax.set_title("Price vs SMA")
 ax.legend()
 st.pyplot(fig)
 
-st.caption("Live BTC/USD data from Coinbase via ccxt (30-minute candles) with market depth, OBV, and signal confidence scoring.")
+# Live News Feed
+st.subheader("📰 Latest Bitcoin News")
+feed = feedparser.parse("https://coindesk.com/arc/outboundfeeds/rss/?outputType=xml")
+news_items = feed.entries[:5]
+for item in news_items:
+    st.markdown(f"**[{item.title}]({item.link})**\n- {item.published}")
+
+st.caption("Live BTC/USD data from Coinbase via ccxt (30-minute candles) with market depth, OBV, signal confidence scoring, and Bitcoin news.")
