@@ -11,7 +11,7 @@ def get_ccxt_coinbase_data():
     df = pd.DataFrame(ohlcv, columns=["timestamp", "open", "high", "low", "close", "volume"])
     df["timestamp"] = pd.to_datetime(df["timestamp"], unit="ms")
     df.set_index("timestamp", inplace=True)
-    return df[["close"]]
+    return df[["close", "volume"]]
 
 # Fetch order book depth data
 def get_order_book_summary():
@@ -31,8 +31,9 @@ def get_order_book_summary():
 
 # Calculate indicators
 def calculate_indicators(df):
-    price_series = df["close"]
-    delta = price_series.diff()
+    price = df["close"]
+    volume = df["volume"]
+    delta = price.diff()
     gain = delta.where(delta > 0, 0)
     loss = -delta.where(delta < 0, 0)
     avg_gain = gain.rolling(window=14).mean()
@@ -40,16 +41,19 @@ def calculate_indicators(df):
     rs = avg_gain / avg_loss
     rsi = 100 - (100 / (1 + rs))
 
-    ema_12 = price_series.ewm(span=12, adjust=False).mean()
-    ema_26 = price_series.ewm(span=26, adjust=False).mean()
+    ema_12 = price.ewm(span=12, adjust=False).mean()
+    ema_26 = price.ewm(span=26, adjust=False).mean()
     macd = ema_12 - ema_26
     macd_signal = macd.ewm(span=9, adjust=False).mean()
-    sma_50 = price_series.rolling(window=50).mean()
+    sma_50 = price.rolling(window=50).mean()
+
+    obv = (np.sign(price.diff()) * volume).fillna(0).cumsum()
 
     df["RSI"] = rsi
     df["MACD"] = macd
     df["MACD_Signal"] = macd_signal
     df["SMA_50"] = sma_50
+    df["OBV"] = obv
     return df
 
 # Load and process data
@@ -65,12 +69,20 @@ data = calculate_indicators(data)
 latest = data.iloc[-1]
 prev = data.iloc[-2]
 
-buy_signal = (
-    (latest['RSI'] < 30) and
-    (prev['MACD'] < prev['MACD_Signal']) and
-    (latest['MACD'] > latest['MACD_Signal']) and
-    (latest['close'] > latest['SMA_50'])
-)
+# Determine buy signal components
+rsi_trigger = latest['RSI'] < 30
+macd_trigger = prev['MACD'] < prev['MACD_Signal'] and latest['MACD'] > latest['MACD_Signal']
+sma_trigger = latest['close'] > latest['SMA_50']
+obv_trend = data['OBV'].iloc[-1] > data['OBV'].iloc[-10]  # simple OBV uptrend check
+
+# Confidence scoring
+score = 0
+if rsi_trigger: score += 40
+if macd_trigger: score += 30
+if sma_trigger: score += 20
+if obv_trend: score += 10
+
+buy_signal = score >= 90
 
 # Streamlit UI
 st.title("Bitcoin Buy Signal Dashboard")
@@ -83,6 +95,10 @@ st.write(f"RSI: {latest['RSI']:.2f}")
 st.write(f"MACD: {latest['MACD']:.2f}")
 st.write(f"MACD Signal: {latest['MACD_Signal']:.2f}")
 st.write(f"50-period SMA: ${latest['SMA_50']:,.2f}")
+st.write(f"OBV: {latest['OBV']:,.0f}")
+
+st.subheader("Buy Signal Confidence Score")
+st.metric(label="Confidence Score", value=f"{score}%")
 
 if buy_signal:
     st.success("✅ BUY SIGNAL TRIGGERED")
@@ -106,4 +122,4 @@ ax.set_title("Price vs SMA")
 ax.legend()
 st.pyplot(fig)
 
-st.caption("Live BTC/USD data from Coinbase via ccxt (30-minute candles) with market depth analysis.")
+st.caption("Live BTC/USD data from Coinbase via ccxt (30-minute candles) with market depth, OBV, and signal confidence scoring.")
