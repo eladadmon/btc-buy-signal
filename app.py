@@ -5,6 +5,15 @@ import ccxt
 import matplotlib.pyplot as plt
 import feedparser
 
+# Set page background color (light gray for pro look)
+st.markdown("""
+    <style>
+    .main {
+        background-color: #f5f7fa;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
 # Fetch BTC/USD data using ccxt from Coinbase
 def get_ccxt_coinbase_data():
     coinbase = ccxt.coinbase()
@@ -86,7 +95,7 @@ if obv_trend: score += 10
 buy_signal = score >= 90
 
 # Streamlit UI
-st.title("Bitcoin Buy Signal Dashboard")
+st.title("📊 Bitcoin Buy Signal Dashboard")
 
 st.subheader("Latest BTC Price")
 st.metric(label="Price (USD)", value=f"${latest['close']:,.2f}")
@@ -98,13 +107,26 @@ st.write(f"MACD Signal: {latest['MACD_Signal']:.2f}")
 st.write(f"50-period SMA: ${latest['SMA_50']:,.2f}")
 st.write(f"OBV: {latest['OBV']:,.0f}")
 
+# Pro-style confidence score block
 st.subheader("Buy Signal Confidence Score")
-st.metric(label="Confidence Score", value=f"{score}%")
-
-if buy_signal:
-    st.success("✅ BUY SIGNAL TRIGGERED")
+if score >= 90:
+    st.markdown(f"""
+    <div style='background-color:#d4edda;padding:10px;border-radius:5px;'>
+    <h4 style='color:#155724;'>Confidence Score: {score}% ✅ Strong Buy Signal</h4>
+    </div>
+    """, unsafe_allow_html=True)
+elif score >= 60:
+    st.markdown(f"""
+    <div style='background-color:#fff3cd;padding:10px;border-radius:5px;'>
+    <h4 style='color:#856404;'>Confidence Score: {score}% ⚠️ Watch</h4>
+    </div>
+    """, unsafe_allow_html=True)
 else:
-    st.info("No buy signal at the moment.")
+    st.markdown(f"""
+    <div style='background-color:#f8d7da;padding:10px;border-radius:5px;'>
+    <h4 style='color:#721c24;'>Confidence Score: {score}% ❌ No Buy Signal</h4>
+    </div>
+    """, unsafe_allow_html=True)
 
 # Market depth summary
 st.subheader("Market Depth Snapshot")
